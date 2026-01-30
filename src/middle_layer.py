@@ -17,10 +17,23 @@ except ImportError:
 
 
 def load_prompts() -> Dict[str, Dict[str, str]]:
-    """Load prompts from prompts.json file."""
+    """
+    Load prompts from prompts.json file.
+    Handles both string and array formats (arrays are joined with newlines).
+    """
     prompts_path = Path(__file__).parent / "prompts.json"
     with open(prompts_path, 'r') as f:
-        return json.load(f)
+        prompts = json.load(f)
+    
+    # Convert array prompts to strings by joining with newlines
+    processed_prompts = {}
+    for key, value in prompts.items():
+        if isinstance(value.get("prompt"), list):
+            processed_prompts[key] = {"prompt": "\n".join(value["prompt"])}
+        else:
+            processed_prompts[key] = value
+    
+    return processed_prompts
 
 
 def improve_english(user_prompt: str) -> Tuple[str, str]:
