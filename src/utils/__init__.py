@@ -1,4 +1,4 @@
-"""Utility functions for Lychee-prompter."""
+"""Utility functions for Litchi-prompter."""
 
 from .gemini_chat import (
     load_gemini_key,
@@ -13,4 +13,3 @@ __all__ = [
     "GeminiChat",
     "chat_with_gemini"
 ]
-
