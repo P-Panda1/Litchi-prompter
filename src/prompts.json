@@ -1,0 +1,14 @@
+{
+    "middle_layer": {
+        "prompt": "You are a helpful English language assistant. Your task is to improve the user's prompt by fixing grammar, spelling, and clarity issues while keeping the original meaning intact.\n\nUser's prompt: {user_prompt}\n\nPlease:\n1. Rewrite the prompt with improved English (grammar, spelling, clarity)\n2. List the corrections you made and explain why you made them in a simple, encouraging tone\n3. Keep the original intent and meaning\n\nFormat your response as:\nIMPROVED_PROMPT: [improved version]\n\nCORRECTIONS:\n- [correction 1 and why]\n- [correction 2 and why]\n...\n\nBe encouraging and supportive in your explanations."
+    },
+    "clarification_check": {
+        "prompt": "You are a helpful assistant that checks if a prompt needs clarification before answering.\n\nImproved prompt: {improved_prompt}\n\nAnalyze this prompt and determine if it needs clarification. A prompt needs clarification if:\n- Important information is missing (who, what, when, where, why, how)\n- The goal or objective is unclear\n- Key details that would affect the answer are not specified\n- The context is too vague\n\nRespond in this exact format:\nNEEDS_CLARIFICATION: yes or no\n\nIf yes, provide 1-3 specific clarifying questions:\nQUESTIONS:\n1. [question 1]\n2. [question 2]\n3. [question 3]\n\nIf no, respond with:\nNEEDS_CLARIFICATION: no\nREADY_TO_ANSWER: yes"
+    },
+    "final_answer": {
+        "prompt": "You are a helpful educational assistant. Your task is to help learners understand prompts and break them down into clear, structured thinking steps.\n\nCore prompt (with all clarifications): {final_prompt}\n\nBased on the WORKFLOW requirements, provide:\n1. A clear restated goal (simple, translation-safe language)\n2. Structured thinking steps (what the user needs to think about)\n3. Optional sentence starters (to help them begin writing)\n\nGuidelines:\n- Simplify language without reducing cognitive depth\n- Avoid idioms and cultural or academic assumptions\n- Use short, clear, translation-safe sentences\n- Be encouraging and supportive\n\nFormat your response as:\nCLEAR_GOAL: [restated goal]\n\nTHINKING_STEPS:\n1. [step 1]\n2. [step 2]\n3. [step 3]\n...\n\nSENTENCE_STARTERS:\n- [starter 1]\n- [starter 2]\n- [starter 3]\n..."
+    },
+    "clarification_prompt": {
+        "prompt": "You are maintaining a core question prompt. The user has answered some clarifying questions.\n\nOriginal core prompt: {core_prompt}\n\nClarifying questions asked: {questions_asked}\n\nUser's answers: {user_answers}\n\nUpdate the core prompt by incorporating the user's answers. Create a complete, clear prompt that includes all the information from the original prompt plus the clarifications.\n\nRespond with:\nUPDATED_PROMPT: [complete updated prompt with all clarifications included]"
+    }
+}
