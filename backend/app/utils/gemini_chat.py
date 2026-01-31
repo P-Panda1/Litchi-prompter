@@ -152,7 +152,7 @@ class GeminiChat:
 
 def chat_with_gemini(
     prompt: str,
-    model: str = "gemini-1.5-pro",
+    model: str = "gemini-2.5-flash",
     api_key: Optional[str] = None,
     system_instruction: Optional[str] = None,
     **kwargs
@@ -164,7 +164,7 @@ def chat_with_gemini(
 
     Args:
         prompt: The message/prompt to send to the model
-        model: The Gemini model to use (default: "gemini-1.5-pro")
+        model: The Gemini model to use (default: "gemini-2.5-flash")
         api_key: Optional API key. If not provided, will be loaded from environment.
         system_instruction: Optional system instruction to set model behavior
         **kwargs: Additional arguments to pass to generate_content
