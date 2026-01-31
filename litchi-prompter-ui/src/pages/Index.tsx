@@ -4,203 +4,167 @@ import PromptInput from "@/components/PromptInput";
 import ClarifyingQuestions from "@/components/ClarifyingQuestions";
 import PromptOutput from "@/components/PromptOutput";
 import LoadingState from "@/components/LoadingState";
+import { processChat, submitClarification, ApiError } from "@/lib/api";
+import type { ChatResponse, ConversationState } from "@/lib/types";
+import { toast } from "@/hooks/use-toast";
 
 type AppState = "input" | "clarifying" | "loading" | "output";
 
-interface Question {
-  id: string;
-  text: string;
-  placeholder: string;
-}
-
-interface Result {
-  goal: string;
-  thinkingSteps: string[];
-  sentenceStarters: string[];
-  explanation: string;
-}
-
-// Simulated logic - in production, this would call an AI service
-const needsClarification = (prompt: string): boolean => {
-  const vaguePatterns = [
-    /create a (website|page|app)/i,
-    /design a/i,
-    /build a/i,
-    /make a/i,
-  ];
-  return vaguePatterns.some((pattern) => pattern.test(prompt));
-};
-
-const getClarifyingQuestions = (prompt: string): Question[] => {
-  if (/landing page|website|page/i.test(prompt)) {
-    return [
-      {
-        id: "user",
-        text: "Who is the user?",
-        placeholder: "Example: Students, parents, small business owners...",
-      },
-      {
-        id: "problem",
-        text: "What problem do they have?",
-        placeholder: "Example: They need to find information quickly...",
-      },
-      {
-        id: "feeling",
-        text: "What should the user feel?",
-        placeholder: "Example: Confident, excited, informed...",
-      },
-      {
-        id: "action",
-        text: "What action should be easy to take?",
-        placeholder: "Example: Sign up, contact us, learn more...",
-      },
-    ];
-  }
-  return [
-    {
-      id: "context",
-      text: "What is the context for this task?",
-      placeholder: "Example: A school assignment, work project...",
-    },
-    {
-      id: "audience",
-      text: "Who will read or see this?",
-      placeholder: "Example: My teacher, classmates, clients...",
-    },
-    {
-      id: "constraints",
-      text: "Are there any requirements or limits?",
-      placeholder: "Example: Word count, format, deadline...",
-    },
-  ];
-};
-
-const generateResult = (prompt: string, answers?: Record<string, string>): Result => {
-  // Simulated results based on prompt type
-  if (/reflection|project|learned/i.test(prompt)) {
-    return {
-      goal: "You will explain what you built and what you learned from the experience.",
-      thinkingSteps: [
-        "What did you build or create?",
-        "What was the most difficult part?",
-        "What did you learn from this experience?",
-        "What would you do differently next time?",
-      ],
-      sentenceStarters: [
-        "My project is about...",
-        "One challenge I had was...",
-        "I learned that...",
-        "Next time, I would...",
-      ],
-      explanation:
-        "The language was simplified and broken into clear steps. The word 'reflection' was explained with specific questions to guide your thinking.",
-    };
-  }
-
-  if (/landing page|website|product/i.test(prompt) && answers) {
-    return {
-      goal: `You will create a page that helps ${answers.user || "your users"} understand how to solve ${answers.problem || "their problem"} and feel ${answers.feeling || "confident"} about taking action.`,
-      thinkingSteps: [
-        `Define who your user is: ${answers.user || "your target audience"}`,
-        `Explain the problem clearly: ${answers.problem || "the challenge they face"}`,
-        "Show how your product or service helps",
-        `Make it easy to: ${answers.action || "take the next step"}`,
-        "Use simple words and clear visuals",
-      ],
-      sentenceStarters: [
-        "The main problem we solve is...",
-        "Our users need...",
-        "With this product, you can...",
-        "The next step is to...",
-      ],
-      explanation:
-        "Your prompt was vague, so we asked questions to understand your goals. Now we have clear steps for planning your page design.",
-    };
-  }
-
-  if (/compare|contrast/i.test(prompt)) {
-    return {
-      goal: "You will show how two things are similar and different, and explain why this matters.",
-      thinkingSteps: [
-        "What are the two things you are comparing?",
-        "List 2-3 ways they are similar",
-        "List 2-3 ways they are different",
-        "Explain which differences are most important",
-        "Say what we can learn from this comparison",
-      ],
-      sentenceStarters: [
-        "Both of these...",
-        "One difference is that...",
-        "The most important similarity is...",
-        "This comparison shows us that...",
-      ],
-      explanation:
-        "The task was broken down into specific thinking steps. Compare and contrast means finding both similarities and differences.",
-    };
-  }
-
-  // Default response
-  return {
-    goal: "You will complete this task step by step, making sure you understand each part before moving forward.",
-    thinkingSteps: [
-      "Read the prompt carefully. What is being asked?",
-      "What information do you already have?",
-      "What information do you need to find or think about?",
-      "Plan your response before writing",
-      "Check your work against the original prompt",
-    ],
-    sentenceStarters: [
-      "The task is asking me to...",
-      "I already know that...",
-      "I need to find out...",
-      "My plan is to...",
-    ],
-    explanation:
-      "We created general thinking steps to help you approach any task. Take your time with each step.",
-  };
-};
-
 const Index = () => {
   const [state, setState] = useState<AppState>("input");
-  const [originalPrompt, setOriginalPrompt] = useState("");
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [result, setResult] = useState<Result | null>(null);
+  const [conversationState, setConversationState] = useState<ConversationState | null>(null);
+  const [chatResponse, setChatResponse] = useState<ChatResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handlePromptSubmit = (prompt: string) => {
-    setOriginalPrompt(prompt);
+  const handlePromptSubmit = async (prompt: string) => {
+    setIsLoading(true);
+    setState("loading");
 
-    if (needsClarification(prompt)) {
-      setQuestions(getClarifyingQuestions(prompt));
-      setState("clarifying");
-    } else {
-      setState("loading");
-      // Simulate API call
-      setTimeout(() => {
-        setResult(generateResult(prompt));
+    try {
+      const response = await processChat({
+        user_prompt: prompt,
+        state: null,
+      });
+
+      setChatResponse(response);
+      setConversationState(response.state);
+
+      if (response.state.state_type === "needs_clarification") {
+        setState("clarifying");
+      } else if (response.state.state_type === "final_output" && response.final_answer) {
         setState("output");
-      }, 1500);
+      } else {
+        setState("input");
+        toast({
+          title: "Error",
+          description: "Unexpected response from server",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      setState("input");
+      if (error instanceof ApiError) {
+        toast({
+          title: "Error",
+          description: error.detail || error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleQuestionsSubmit = (answers: Record<string, string>) => {
+  const handleQuestionsSubmit = async (answers: Record<string, string>) => {
+    if (!conversationState || !chatResponse?.clarification) {
+      return;
+    }
+
+    setIsLoading(true);
     setState("loading");
-    // Simulate API call
-    setTimeout(() => {
-      setResult(generateResult(originalPrompt, answers));
-      setState("output");
-    }, 1500);
+
+    try {
+      // Convert answers object to array in the order of questions
+      const answerArray = chatResponse.clarification.questions.map(
+        (_, index) => {
+          const questionId = `question-${index}`;
+          return answers[questionId]?.trim() || "";
+        }
+      );
+
+      // Validate all answers are provided
+      if (answerArray.some(answer => !answer)) {
+        toast({
+          title: "Please answer all questions",
+          description: "All questions must be answered before continuing.",
+          variant: "destructive",
+        });
+        setState("clarifying");
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await submitClarification({
+        answers: answerArray,
+        state: conversationState,
+      });
+
+      setChatResponse(response);
+      setConversationState(response.state);
+
+      if (response.state.state_type === "final_output" && response.final_answer) {
+        setState("output");
+      } else {
+        setState("input");
+        toast({
+          title: "Error",
+          description: "Unexpected response from server",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      setState("clarifying");
+      if (error instanceof ApiError) {
+        toast({
+          title: "Error",
+          description: error.detail || error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBack = () => {
     setState("input");
-    setQuestions([]);
+    setConversationState(null);
+    setChatResponse(null);
   };
 
   const handleReset = () => {
     setState("input");
-    setOriginalPrompt("");
-    setQuestions([]);
-    setResult(null);
+    setConversationState(null);
+    setChatResponse(null);
+  };
+
+  // Convert API response to component format
+  const getResult = () => {
+    if (!chatResponse?.final_answer) return null;
+
+    return {
+      goal: chatResponse.final_answer.goal,
+      thinkingSteps: chatResponse.final_answer.thinking_steps,
+      sentenceStarters: chatResponse.final_answer.sentence_starters,
+      explanation: chatResponse.improved_prompt?.corrections || "Your prompt was processed and improved.",
+    };
+  };
+
+  // Convert API questions to component format
+  const getQuestions = () => {
+    if (!chatResponse?.clarification) return [];
+
+    return chatResponse.clarification.questions.map((question, index) => ({
+      id: `question-${index}`,
+      text: question,
+      placeholder: "Type your answer here...",
+    }));
+  };
+
+  const getOriginalPrompt = () => {
+    return chatResponse?.improved_prompt?.improved_prompt || "";
   };
 
   return (
@@ -209,22 +173,42 @@ const Index = () => {
 
       <main className="container max-w-2xl mx-auto px-4 py-8 md:py-12">
         {state === "input" && (
-          <PromptInput onSubmit={handlePromptSubmit} />
+          <PromptInput onSubmit={handlePromptSubmit} isLoading={isLoading} />
         )}
 
-        {state === "clarifying" && (
+        {state === "clarifying" && chatResponse?.clarification && (
           <ClarifyingQuestions
-            questions={questions}
+            questions={getQuestions()}
             onSubmit={handleQuestionsSubmit}
             onBack={handleBack}
-            originalPrompt={originalPrompt}
+            originalPrompt={getOriginalPrompt()}
           />
         )}
 
         {state === "loading" && <LoadingState />}
 
-        {state === "output" && result && (
-          <PromptOutput result={result} onReset={handleReset} />
+        {state === "output" && getResult() && (
+          <PromptOutput result={getResult()!} onReset={handleReset} />
+        )}
+
+        {/* Show improved prompt if available and not in output state */}
+        {chatResponse?.improved_prompt && state !== "output" && state !== "loading" && (
+          <div className="mt-6 p-5 rounded-xl bg-card border-2 border-primary/20 shadow-card">
+            <div className="flex items-center gap-2 text-primary mb-3">
+              <span className="text-sm font-medium">✨ Improved Prompt</span>
+            </div>
+            <p className="text-foreground mb-3">{chatResponse.improved_prompt.improved_prompt}</p>
+            {chatResponse.improved_prompt.corrections && (
+              <details className="mt-3">
+                <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+                  See what was improved
+                </summary>
+                <div className="mt-2 p-3 rounded-lg bg-secondary/50 text-sm text-muted-foreground whitespace-pre-wrap">
+                  {chatResponse.improved_prompt.corrections}
+                </div>
+              </details>
+            )}
+          </div>
         )}
       </main>
 
