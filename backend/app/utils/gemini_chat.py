@@ -14,13 +14,13 @@ import google.generativeai as genai
 def load_gemini_key() -> str:
     """
     Load Gemini API key from environment variables.
-    
+
     Checks for GEMINI_KEY first, then GEMINI_KEY_PATH.
     If GEMINI_KEY_PATH is set, reads the key from that file.
-    
+
     Returns:
         str: The API key
-        
+
     Raises:
         ValueError: If neither GEMINI_KEY nor GEMINI_KEY_PATH is found
         FileNotFoundError: If GEMINI_KEY_PATH is set but file doesn't exist
@@ -29,7 +29,7 @@ def load_gemini_key() -> str:
     api_key = os.getenv("GEMINI_KEY")
     if api_key:
         return api_key.strip()
-    
+
     # If not found, check for path to key file
     key_path = os.getenv("GEMINI_KEY_PATH")
     if key_path:
@@ -41,7 +41,7 @@ def load_gemini_key() -> str:
             api_key = f.read().strip()
         if api_key:
             return api_key
-    
+
     raise ValueError(
         "Neither GEMINI_KEY nor GEMINI_KEY_PATH found in environment variables. "
         "Please set one of these environment variables."
@@ -51,7 +51,7 @@ def load_gemini_key() -> str:
 def init_gemini_client(api_key: Optional[str] = None) -> None:
     """
     Initialize the Gemini API client with the API key.
-    
+
     Args:
         api_key: Optional API key. If not provided, will be loaded from environment.
     """
@@ -63,22 +63,22 @@ def init_gemini_client(api_key: Optional[str] = None) -> None:
 class GeminiChat:
     """
     A chat interface for Google's Gemini LLM.
-    
+
     This class provides a simple interface for chatting with Gemini,
     maintaining conversation history if needed.
     """
-    
+
     def __init__(
         self,
-        model: str = "gemini-1.5-pro",
+        model: str = "gemini-2.5-flash",
         api_key: Optional[str] = None,
         system_instruction: Optional[str] = None
     ):
         """
         Initialize the Gemini chat interface.
-        
+
         Args:
-            model: The Gemini model to use (default: "gemini-1.5-pro")
+            model: The Gemini model to use (default: "gemini-2.5-flash")
             api_key: Optional API key. If not provided, will be loaded from environment.
             system_instruction: Optional system instruction to set model behavior
         """
@@ -90,12 +90,12 @@ class GeminiChat:
         )
         self.chat = None
         self.conversation_history: List[Dict[str, str]] = []
-    
+
     def start_chat(self) -> None:
         """Start a new chat session with conversation history."""
         self.chat = self.model.start_chat(history=[])
         self.conversation_history = []
-    
+
     def send_message(
         self,
         prompt: str,
@@ -104,12 +104,12 @@ class GeminiChat:
     ) -> str:
         """
         Send a message to Gemini and get a response.
-        
+
         Args:
             prompt: The message/prompt to send to the model
             stream: Whether to stream the response (default: False)
             **kwargs: Additional arguments to pass to generate_content
-            
+
         Returns:
             str: The model's response text
         """
@@ -129,16 +129,16 @@ class GeminiChat:
                 **kwargs
             )
             return response.text
-    
+
     def reset_chat(self) -> None:
         """Reset the chat session and clear conversation history."""
         self.chat = None
         self.conversation_history = []
-    
+
     def get_history(self) -> List[Dict[str, str]]:
         """
         Get the conversation history.
-        
+
         Returns:
             List of dictionaries with 'role' and 'content' keys
         """
@@ -159,16 +159,16 @@ def chat_with_gemini(
 ) -> str:
     """
     Simple function to send a prompt to Gemini and get a response.
-    
+
     This is a convenience function for one-off prompts without conversation history.
-    
+
     Args:
         prompt: The message/prompt to send to the model
         model: The Gemini model to use (default: "gemini-1.5-pro")
         api_key: Optional API key. If not provided, will be loaded from environment.
         system_instruction: Optional system instruction to set model behavior
         **kwargs: Additional arguments to pass to generate_content
-        
+
     Returns:
         str: The model's response text
     """
@@ -179,4 +179,3 @@ def chat_with_gemini(
     )
     response = gemini_model.generate_content(prompt, **kwargs)
     return response.text
-
