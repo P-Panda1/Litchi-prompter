@@ -12,6 +12,24 @@ FRONTEND_DIR="$PROJECT_ROOT/litchi-prompter-ui"
 echo "🚀 Deploying Lychee-prompter Frontend..."
 echo ""
 
+# Check if Node.js is installed
+if ! command -v node &> /dev/null; then
+    echo "❌ Error: Node.js is not installed!"
+    echo "   Please install Node.js from https://nodejs.org/"
+    exit 1
+fi
+
+# Check if npm is installed
+if ! command -v npm &> /dev/null; then
+    echo "❌ Error: npm is not installed!"
+    echo "   npm should come with Node.js. Please reinstall Node.js."
+    exit 1
+fi
+
+echo "✅ Node.js version: $(node --version)"
+echo "✅ npm version: $(npm --version)"
+echo ""
+
 # Check if we're in the right directory
 if [ ! -d "$FRONTEND_DIR" ]; then
     echo "❌ Error: Frontend directory not found at $FRONTEND_DIR"
@@ -20,12 +38,25 @@ fi
 
 cd "$FRONTEND_DIR"
 
-# Check if node_modules exists
-if [ ! -d "node_modules" ]; then
+# Check if node_modules exists or if package.json has changed
+if [ ! -d "node_modules" ] || [ ! -f "node_modules/.bin/vite" ]; then
     echo "📦 Installing dependencies..."
     npm install
+    echo "✅ Dependencies installed successfully"
 else
     echo "📦 Dependencies already installed"
+fi
+
+# Verify vite is available
+if [ ! -f "node_modules/.bin/vite" ]; then
+    echo "❌ Error: Vite binary not found after installation!"
+    echo "   Trying to reinstall dependencies..."
+    rm -rf node_modules package-lock.json
+    npm install
+    if [ ! -f "node_modules/.bin/vite" ]; then
+        echo "❌ Error: Failed to install Vite. Please check your internet connection and try again."
+        exit 1
+    fi
 fi
 
 # Check for .env file
@@ -57,6 +88,7 @@ echo ""
 echo "Press Ctrl+C to stop the server"
 echo ""
 
-# Start the development server
+# Start the development server using npm run dev
+# npm run dev uses the vite binary from node_modules/.bin automatically
 npm run dev
 
